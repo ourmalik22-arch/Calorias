@@ -234,12 +234,12 @@
 const PILLARS = [
   {key:'sono', label:'Sono', icon:'🌙', type:'sleep', target:7, allowPause:false},
   {key:'academia', label:'Academia', icon:'🏋️', type:'tristate', target:5, allowPause:true},
-  {key:'dieta', label:'Dieta', icon:'🥗', type:'diet', target:7, allowPause:false},
+  {key:'dieta', label:'Dieta', icon:'🥗', type:'diet', target:6, allowPause:true},
   {key:'cardio', label:'Cardio', icon:'🏃', type:'cardio', target:4, allowPause:false},
   {key:'agua', label:'Água', icon:'💧', type:'water', target:7, allowPause:false},
   {key:'estudo', label:'Estudo', icon:'📚', type:'tristate_note', target:6, allowPause:true},
-  {key:'idiomas', label:'Idiomas', icon:'🗣️', type:'lang', target:3, allowPause:false},
-  {key:'leitura', label:'Leitura', icon:'📖', type:'reading', target:null, allowPause:false},
+  {key:'idiomas', label:'Idiomas', icon:'🗣️', type:'lang', target:3, allowPause:true},
+  {key:'leitura', label:'Leitura', icon:'📖', type:'reading', target:4, allowPause:true},
   {key:'quarto', label:'Quarto', icon:'🛏️', type:'room', target:7, allowPause:false},
   {key:'suplementos', label:'Suplementos', icon:'💊', type:'supplements', target:7, allowPause:false},
   {key:'cabelo', label:'Cabelo', icon:'💇‍♀️', type:'hair', target:3, allowPause:false},
@@ -291,6 +291,7 @@ function pillarStatus(pillar, iso){
     case 'tristate': return d.status || 'nao';
     case 'tristate_note': return d.status || 'nao';
     case 'diet': {
+      if(d.pausa) return 'pausa';
       if(!d.kcal && d.kcal!==0) return 'nao';
       const kcalOk = d.kcal <= DIET_GOAL.kcal*1.1 && d.kcal >= DIET_GOAL.kcal*0.9;
       const protOk = d.prot >= DIET_GOAL.prot*0.95;
@@ -300,8 +301,8 @@ function pillarStatus(pillar, iso){
     }
     case 'cardio': return (d.tipo) ? 'feito' : 'nao';
     case 'water': return (d.ml && d.ml >= 2500) ? 'feito' : 'nao';
-    case 'lang': return d.done ? 'feito' : 'nao';
-    case 'reading': return (d.pages>0 || d.percent>0) ? 'feito' : 'nao';
+    case 'lang': if(d.pausa) return 'pausa'; return d.done ? 'feito' : 'nao';
+    case 'reading': if(d.pausa) return 'pausa'; return (d.pages>0 || d.percent>0) ? 'feito' : 'nao';
     case 'room': return d.arrumou ? 'feito' : 'nao';
     case 'supplements': return (d.creatina && d.magnesio) ? 'feito' : 'nao';
     case 'hair': return d.lavou ? 'feito' : 'nao';
@@ -473,6 +474,7 @@ function renderModalBody(p, iso){
     `;
     }
     case 'diet': return `
+      <div class="toggle-row"><span class="tlabel">Pausa hoje (refeição livre)</span><div class="switch ${d.pausa?'on':''}" data-field="pausa"><div class="knob"></div></div></div>
       <div class="field"><label>Calorias (meta ${DIET_GOAL.kcal} kcal)</label><input type="number" id="fKcal" value="${d.kcal||''}"></div>
       <div class="row2">
         <div class="field"><label>Proteína (meta ${DIET_GOAL.prot}g)</label><input type="number" id="fProt" value="${d.prot||''}"></div>
@@ -498,6 +500,7 @@ function renderModalBody(p, iso){
     `;
     }
     case 'lang': return `
+      <div class="toggle-row"><span class="tlabel">Pausa hoje (não vou estudar idioma)</span><div class="switch ${d.pausa?'on':''}" data-field="pausa"><div class="knob"></div></div></div>
       <div class="field"><label>Idioma estudado hoje</label>
         <select id="fLang">
           <option value="">Nenhum ainda</option>
@@ -587,7 +590,8 @@ function renderReadingModal(d){
   const current = state.books.current;
   const finished = state.books.finished;
   return `
-    <p class="tag">Livro atual</p>
+    <div class="toggle-row"><span class="tlabel">Pausa hoje (não vou ler)</span><div class="switch ${d.pausa?'on':''}" data-field="pausa"><div class="knob"></div></div></div>
+    <p class="tag" style="margin-top:12px;">Livro atual</p>
     ${current.length===0 ? '<div class="empty">Nenhum livro em andamento.</div>' : current.map((b,i)=>{
       const pct = b.totalPages ? Math.min(100, Math.round(b.pagesRead/b.totalPages*100)) : 0;
       return `<div class="book-item" data-idx="${i}">
